@@ -55,7 +55,7 @@ String[] symbol = {
 };
 
 String[]inGameMusic = {
-  "shooting_stars.wav", "vitas.wav", "mask_off.wav", "numa_numa.wav", "heyye.wav"
+  "all_star.wav", "heyye.wav", "mask_off.wav", "numa_numa.wav", "rick_roll.wav", "vitas.wav", "shooting_stars.wav"
 };
 
 String[] scoreboard;
@@ -91,7 +91,7 @@ void setup() {
   heart.resize(42, 42);
 
   player = new Defender(width/2, height - height/16, 0, 45); //Gets the information from the Defender class
-  yeee = new SpaceShip(-75, 50, 0, 40);
+  yeee = new SpaceShip(-75, 42, 0, 40);
   lifeUp = new ExtraLife(-75, 100, 0, 40);
 
   speed = width/250; //Speed is based on how big screen is

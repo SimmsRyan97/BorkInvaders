@@ -20,7 +20,7 @@ body {
   height: 100%;
   margin: 0;
   color: var(--ink);
-  font-family: "Space Mono", monospace;
+  font-family: "Roboto", sans-serif;
   background:
     radial-gradient(circle at 15% 20%, rgba(255, 183, 3, 0.2), transparent 35%),
     radial-gradient(circle at 80% 10%, rgba(251, 86, 7, 0.15), transparent 30%),
@@ -120,6 +120,7 @@ body {
 .help {
   font-size: 0.8rem;
   opacity: 0.88;
+  font-family: "Roboto", sans-serif;
 }
 
 @keyframes shell-in {

@@ -1,0 +1,151 @@
+:root {
+  --bg-a: #062640;
+  --bg-b: #0f4c3a;
+  --bg-c: #17304d;
+  --ink: #e7f3ff;
+  --accent: #ffb703;
+  --accent-2: #fb5607;
+  --good: #80ed99;
+  --warn: #ffd166;
+  --panel: rgba(6, 24, 44, 0.72);
+  --line: rgba(231, 243, 255, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  color: var(--ink);
+  font-family: "Space Mono", monospace;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 183, 3, 0.2), transparent 35%),
+    radial-gradient(circle at 80% 10%, rgba(251, 86, 7, 0.15), transparent 30%),
+    linear-gradient(140deg, var(--bg-a), var(--bg-b) 50%, var(--bg-c));
+}
+
+body {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.app-shell {
+  width: min(1100px, 96vw);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  animation: shell-in 420ms ease-out;
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand {
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(0.9rem, 2.2vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.stats {
+  display: flex;
+  gap: 12px;
+  font-size: clamp(0.8rem, 1.6vw, 1rem);
+}
+
+.stage-wrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+#gameCanvas {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-family: "Orbitron", sans-serif;
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6vw, 2rem);
+  letter-spacing: 0.05em;
+  color: var(--warn);
+  text-shadow: 0 0 22px rgba(255, 183, 3, 0.5);
+  pointer-events: none;
+}
+
+.controls {
+  display: none;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.control-btn {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(10, 33, 56, 0.85);
+  color: var(--ink);
+  padding: 10px;
+  font-family: "Orbitron", sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.control-btn.accent {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #132;
+  font-weight: 700;
+}
+
+.help {
+  font-size: 0.8rem;
+  opacity: 0.88;
+}
+
+@keyframes shell-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 900px) {
+  .stats {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .controls {
+    display: grid;
+  }
+
+  .help {
+    font-size: 0.72rem;
+  }
+}

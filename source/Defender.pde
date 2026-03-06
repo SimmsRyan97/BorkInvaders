@@ -50,7 +50,7 @@ class Defender {
   }
 
   public boolean crash(Aliens alien) {
-    if (alien.y >= y && alien.x == x) { //If the defender hits an alien, returns true
+    if (dist(alien.x, alien.y, x, y) < size) { //If the defender hits an alien, returns true
       return true;
     } else {
       return false;

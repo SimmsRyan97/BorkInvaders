@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bork Invaders Web</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hud">
+      <div class="brand">BORK INVADERS WEB</div>
+      <div class="stats">
+        <span id="scoreLabel">Score: 0</span>
+        <span id="livesLabel">Lives: 3</span>
+        <span id="levelLabel">Level: 1</span>
+      </div>
+    </header>
+
+    <section class="stage-wrap">
+      <canvas id="gameCanvas" width="960" height="540" aria-label="Bork Invaders game area"></canvas>
+      <div id="overlay" class="overlay"></div>
+    </section>
+
+    <section class="controls" aria-label="Touch controls">
+      <button id="leftBtn" class="control-btn">LEFT</button>
+      <button id="fireBtn" class="control-btn accent">FIRE</button>
+      <button id="rightBtn" class="control-btn">RIGHT</button>
+    </section>
+
+    <footer class="help">
+      <span>Desktop: A / D / Left / Right to move, Space to shoot, Enter to restart</span>
+    </footer>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

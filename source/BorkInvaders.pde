@@ -30,13 +30,13 @@ int columns = 15; //Number of columns in 2D array
 int alienCounter = 0; //Counts number of aliens hit
 float animationCounter = 0; //Keeps track of animations
 int alienMissileCounter; //Keeps track of when aliens shoot
-int yeeCounter; //Determines when spaceship flies across screen
 int spaceShipShoot = 0;
 boolean moveLeft;
 boolean moveRight;
 boolean shooting;
-int shootTimer, extraLifeCounter;
-boolean runonce = false;
+int shootTimer;
+int yeeSpawnCooldown = 300;
+int extraLifeSpawnCooldown = 600;
 float pw;
 String outFileName = "scoreboard.txt";
 String initials;
@@ -122,18 +122,7 @@ void setup() {
     appendTextToFile(outFileName, "AAA - 0");
   }
 
-  scoreboard = loadStrings(outFileName);
-
-  Arrays.sort(scoreboard, new Comparator<String>() {
-    public int compare(String one, String two) {
-      return Integer.valueOf(two.substring(6)).compareTo(Integer.valueOf(one.substring(6)));
-    }
-  }
-  );
-
-  for (int i = 0; i < 1; i++) {
-    highScore = Integer.valueOf(scoreboard[i].substring(6));
-  }
+  reloadScoreboard();
 
   cp5 = new ControlP5(this);
   cp5.addTextfield("initials")
@@ -153,7 +142,6 @@ void draw() {
   //Draws the main menu
   if (gameMode == 0) {
     cp5.get(Textfield.class, "initials").clear().hide();
-    menu.play();
     inGame.pause();
     image(splash, 0, 0);
 
@@ -191,8 +179,6 @@ void draw() {
     progress();
     menu.pause();
     animationCounter += 1;
-    yeeCounter = int(random(0, 5000));
-    extraLifeCounter = int(random(0, 1000));
 
     if (!inGame.isPlaying()) {
       int inGameSong = int(random(inGameMusic.length));
@@ -206,11 +192,7 @@ void draw() {
       animationCounter = 0;
     }
 
-    if (runonce) {
-      lifeUp.x = int(random(50, width - 50));
-      lifeUp.y = 300;
-      runonce = false;
-    }
+    boolean edgeHit = false;
 
     //Adds Aliens
     for (int j = 0; j < rows; j++) { //Adds aliens on the screen (15 by 4)
@@ -220,58 +202,72 @@ void draw() {
           if (alien[i][j].spaceShipGo()) {
             spaceShipShoot = 1;
           }
-          if (lifeUp != null) {
-            lifeUp.updateExtraLife();
-            if (extraLifeCounter == 500) {
-              runonce = true;
-            }
+          if (alien[i][j].x >= width || alien[i][j].x <= 0) {
+            edgeHit = true;
           }
-          if (alien[i][j].x >= width) { //If the edge is hit
-            for (int l = 0; l < rows; l++) {
-              for (int k = 0; k < columns; k++) {
-                if (alien[k][l] != null) {
-                  alien[k][l].speed = -alien[k][l].speed; //the aliens move the opposite direction
-                  alien[k][l].y = alien[k][l].y + 25; //the aliens move down a little
-                }
-              }
-            }
-          } else if (alien[i][j].x <= 0) { //If the edge is hit
-            for (int l = 0; l < rows; l++) {
-              for (int k = 0; k < columns; k++) {
-                if (alien[k][l] != null) {
-                  alien[k][l].speed = -alien[k][l].speed; //the aliens move the opposite direction
-                  alien[k][l].y = alien[k][l].y + 25; //the aliens move down a little
-                }
-              }
-            }
-          }
-          for (int l = 0; l < rows; l++) {
-            for (int k = 0; k < columns; k++) {
-              if (alien[k][l] != null) {
-                alienMissileCounter = int(random(0, 120000));
-                if (alienMissileCounter == 75) { //If the random int is divisible by 75 then the Aliens shoot a missile
-                  missileAlien.add(new MissileAlien(alien[k][l].x, alien[k][l].y, 5));
-                }
-              }
-            }
+
+          //If the aliens reach the bottom of the screen or hit the defender the game is over
+          if (player.crash(alien[i][j]) || alien[i][j].bottomDetection()) {
+            gameMode = 2;
+            death.rewind();
+            death.play();
           }
         }
       }
     }
 
+    if (edgeHit) { //Move all aliens down once after the fleet touches an edge
+      for (int j = 0; j < rows; j++) {
+        for (int i = 0; i < columns; i++) {
+          if (alien[i][j] != null) {
+            alien[i][j].speed = -alien[i][j].speed;
+            alien[i][j].y = alien[i][j].y + 25;
+          }
+        }
+      }
+    }
+
+    maybeAlienShoot();
+
     //Adds a Defender and allows movement
     player.updateDefender();
 
+    if (lifeUp != null) {
+      lifeUp.updateExtraLife();
+
+      if (lifeUp.x > width + 50) {
+        lifeUp.x = -75;
+        lifeUp.speed = 0;
+      }
+
+      if (lifeUp.x < 0) {
+        if (extraLifeSpawnCooldown > 0) {
+          extraLifeSpawnCooldown--;
+        } else if (random(1) < 0.0025) {
+          lifeUp.x = int(random(50, width - 50));
+          lifeUp.y = 300;
+          lifeUp.speed = 2;
+          extraLifeSpawnCooldown = 900;
+        }
+      }
+    }
+
     if (yeee != null) {
       yeee.updateSpaceShip();
-      if (alienCounter < alien.length * alien[0].length && spaceShipShoot == 1) {
-        spaceShipShoot = 0;
-        if (yeeCounter == 1) {
+
+      if (yeee.x < 0 && yeeeSpawnCooldown > 0) {
+        yeeeSpawnCooldown--;
+      }
+
+      if (alienCounter < alien.length * alien[0].length && spaceShipShoot == 1 && yeee.x < 0) {
+        if (yeeeSpawnCooldown <= 0 && random(1) < 0.01) {
           yeeSound.rewind();
           yeeSound.play();
           yeee.speed = 10;
+          yeeeSpawnCooldown = 360;
         }
       }
+
       if (yeee.edgeDetection()) {
         yeee.x = -75;
         yeee.speed = 0;
@@ -279,9 +275,16 @@ void draw() {
     }
 
     //Adds Missiles
-    for (int n = missile.size()-1; n >= 1; n--) { //This adds one missile each time
+    for (int n = missile.size()-1; n >= 0; n--) { //This adds one missile each time
       Missile missiles = missile.get(n); //This gets the number of missiles i.e. 1
       missiles.updateMissile(); //This draws and moves the missile
+
+      if (missiles.y < -50) {
+        missile.remove(n);
+        continue;
+      }
+
+      boolean removedMissile = false;
 
       if (yeee != null) {
         if (missiles.hitSpaceShip(yeee)) {
@@ -289,7 +292,12 @@ void draw() {
           yeee.speed = 0;
           missile.remove(n);
           score = score + 100;
+          removedMissile = true;
         }
+      }
+
+      if (removedMissile) {
+        continue;
       }
 
       if (lifeUp != null) {
@@ -297,7 +305,14 @@ void draw() {
           lives = lives + 1;
           missile.remove(n);
           lifeUp.x = -75;
+          lifeUp.speed = 0;
+          extraLifeSpawnCooldown = 900;
+          removedMissile = true;
         }
+      }
+
+      if (removedMissile) {
+        continue;
       }
 
       for (int j = 0; j < rows; j++) { //Adds aliens on the screen (15 by 4)
@@ -312,24 +327,26 @@ void draw() {
               alienCounter = alienCounter + 1; //Adds one to number of Aliens hit
               pw = pw + 10;
               shootTimer = 0;
+              removedMissile = true;
+              break;
             }
           }
+        }
 
-          //If the aliens reach the bottom of the screen or hit the defender the game is over
-          if (alien[i][j] != null) {
-            if (player.crash(alien[i][j]) || alien[i][j].bottomDetection()) {
-              gameMode = 2;
-              death.rewind();
-              death.play();
-            }
-          }
+        if (removedMissile) {
+          break;
         }
       }
     }
 
-    for (int m = missileAlien.size()-1; m >= 1; m--) { //This adds one missile each time
+    for (int m = missileAlien.size()-1; m >= 0; m--) { //This adds one missile each time
       MissileAlien missilesalien = missileAlien.get(m); //This gets the number of missile i.e. 1
       missilesalien.updateMissile(); //This draws and moves the missile
+
+      if (missilesalien.y > height + 50) {
+        missileAlien.remove(m);
+        continue;
+      }
 
       if (missilesalien.hitDefender(player)) { //If the defender is hit it loses a life
         missileAlien.remove(m);
@@ -378,6 +395,7 @@ void draw() {
       if (key == ENTER) {
         String[] resetHighScore = {"AAA - 0"};
         saveStrings("data/scoreboard.txt", resetHighScore);
+        reloadScoreboard();
         gameMode = 0;
       }
     }
@@ -463,7 +481,7 @@ void nextLevel() { //When the user finishes a level, displays current level and 
   textSize(40);
   text("Press ENTER For Level " + (level+1) + " !", width/2, height - height/2.4);
 
-  if (key == ENTER) { //If the current level is less than 20 and they hit enter a new level starts
+  if (keyPressed && key == ENTER) { //If the current level is less than 20 and they hit enter a new level starts
     level = level + 1; //New level
     speed = speed + 1; //Increases speed to make the next level harder
     alienCounter = 0; //Resets counter for aliens
@@ -482,9 +500,125 @@ void reset() { //Resets all stats when the game is over
   spaceShipShoot = 0;
   yeee.x = -75;
   yeee.speed = 0;
+  lifeUp.x = -75;
+  lifeUp.speed = 0;
+  yeeSpawnCooldown = 300;
+  extraLifeSpawnCooldown = 600;
   missile.clear();
   missileAlien.clear();
   pw = 0;
+}
+
+Aliens getRandomAliveAlien() {
+  int aliveCount = 0;
+
+  for (int j = 0; j < rows; j++) {
+    for (int i = 0; i < columns; i++) {
+      if (alien[i][j] != null) {
+        aliveCount++;
+      }
+    }
+  }
+
+  if (aliveCount == 0) {
+    return null;
+  }
+
+  int target = int(random(aliveCount));
+  int seen = 0;
+  for (int j = 0; j < rows; j++) {
+    for (int i = 0; i < columns; i++) {
+      if (alien[i][j] != null) {
+        if (seen == target) {
+          return alien[i][j];
+        }
+        seen++;
+      }
+    }
+  }
+
+  return null;
+}
+
+void maybeAlienShoot() {
+  int aliveCount = (alien.length * alien[0].length) - alienCounter;
+  if (aliveCount <= 0) {
+    return;
+  }
+
+  // Scale firing pressure as fewer aliens remain to keep late rounds active.
+  float fireChance = 0.004 + (0.003 * (1 - (float)aliveCount / (alien.length * alien[0].length)));
+  if (random(1) < fireChance) {
+    Aliens shooter = getRandomAliveAlien();
+    if (shooter != null) {
+      missileAlien.add(new MissileAlien(shooter.x, shooter.y, 5));
+    }
+  }
+}
+
+int parseScore(String entry) {
+  if (entry == null) {
+    return 0;
+  }
+
+  int dash = entry.lastIndexOf('-');
+  if (dash == -1) {
+    return 0;
+  }
+
+  String value = trim(entry.substring(dash + 1));
+  try {
+    return Integer.valueOf(value);
+  }
+  catch (Exception ex) {
+    return 0;
+  }
+}
+
+String normalizeInitials(String rawValue) {
+  String safe = trim(rawValue).toUpperCase();
+  if (safe.length() == 0) {
+    return "AAA";
+  }
+
+  if (safe.length() >= 3) {
+    return safe.substring(0, 3);
+  }
+
+  while (safe.length() < 3) {
+    safe += "A";
+  }
+
+  return safe;
+}
+
+void reloadScoreboard() {
+  scoreboard = loadStrings(outFileName);
+
+  if (scoreboard == null || scoreboard.length == 0) {
+    scoreboard = new String[] {"AAA - 0"};
+    saveStrings("data/scoreboard.txt", scoreboard);
+  }
+
+  Arrays.sort(scoreboard, new Comparator<String>() {
+    public int compare(String one, String two) {
+      return parseScore(two) - parseScore(one);
+    }
+  }
+  );
+
+  highScore = parseScore(scoreboard[0]);
+}
+
+void submitScoreIfNeeded() {
+  if (score <= 0) {
+    return;
+  }
+
+  initials = normalizeInitials(cp5.get(Textfield.class, "initials").getText());
+  String newScore = initials + " - " + str(score);
+  appendTextToFile(outFileName, newScore);
+  reloadScoreboard();
 }
 
 void newGame() {
@@ -567,34 +701,24 @@ void keyPressed() {
   }
 
   if (gameMode == 2) {
-    if (cp5.get(Textfield.class, "initials").isActive() == false) {
-      if (key == 'r' || key == 'R') { //If the player hits the R key then the game restarts
-        if (score > 0) {
-          initials = cp5.get(Textfield.class, "initials").getText().toUpperCase().substring(0, 3);
-          String newScore = initials + " - " + str(score);
-          appendTextToFile(outFileName, newScore);
-        }
-        gameMode = 1;
-        reset();
-        newGame();
-      } else if (key == 'm' || key == 'M') { //If the M key is pressed the game goes back to the main menu
-        if (score > 0) {
-          initials = cp5.get(Textfield.class, "initials").getText().toUpperCase().substring(0, 3);
-          String newScore = initials + " - " + str(score);
-          appendTextToFile(outFileName, newScore);
-        }
-        gameMode = 0;
-        reset();
-        newGame();
-        menu.play();
-      }
+    if (key == 'r' || key == 'R') { //If the player hits the R key then the game restarts
+      submitScoreIfNeeded();
+      gameMode = 1;
+      reset();
+      newGame();
+    } else if (key == 'm' || key == 'M') { //If the M key is pressed the game goes back to the main menu
+      submitScoreIfNeeded();
+      gameMode = 0;
+      reset();
+      newGame();
+      menu.play();
     }
   }
 }
 
 void keyReleased() { //Had to use keyReleased to stop user from holding down the shoot button and being really easy
   //Allows the missile to be shot
-  if (key == ' ') {
+  if (gameMode == 1 && looping && key == ' ') {
     missile.add(new Missile(int(abs(player.x)), player.y, 10)); //When space is pressed a new missile appears
     shoot.rewind();
     shoot.play();

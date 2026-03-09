@@ -1,5 +1,13 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+const appShell = document.querySelector(".app-shell");
+const hud = document.querySelector(".hud");
+const help = document.querySelector(".help");
+const controls = document.querySelector(".controls");
+
+const BASE_WIDTH = canvas.width;
+const BASE_HEIGHT = canvas.height;
+const CANVAS_ASPECT = BASE_WIDTH / BASE_HEIGHT;
 
 const scoreLabel = document.getElementById("scoreLabel");
 const livesLabel = document.getElementById("livesLabel");
@@ -183,13 +191,6 @@ function playMusic() {
     return;
   }
 
-  if (assets.currentMusic && assets.currentMusic.paused && assets.currentMusic.currentTime > 0) {
-    assets.currentMusic.play().catch(() => {
-      assets.audioEnabled = false;
-    });
-    return;
-  }
-
   if (assets.musicTracks.length === 0) {
     return;
   }
@@ -214,12 +215,64 @@ function playMusic() {
   });
 }
 
-function stopMusic() {
+function resumeMusic() {
+  if (!assets.audioEnabled || !assets.currentMusic) {
+    return;
+  }
+
+  assets.currentMusic.play().catch(() => {
+    assets.audioEnabled = false;
+  });
+}
+
+function stopMusic(resetTrack = false) {
   if (!assets.currentMusic) {
     return;
   }
 
   assets.currentMusic.pause();
+  if (resetTrack) {
+    assets.currentMusic.currentTime = 0;
+    assets.currentMusic = null;
+  }
+}
+
+function setCanvasDisplaySize() {
+  const shellPadding = 12;
+  const hudHeight = hud ? hud.offsetHeight : 0;
+  const helpHeight = help ? help.offsetHeight : 0;
+  const controlsVisible = controls && window.getComputedStyle(controls).display !== "none";
+  const controlsHeight = controlsVisible && controls ? controls.offsetHeight : 0;
+  const verticalSafety = document.fullscreenElement ? 24 : 56;
+  const availableWidth = Math.max(280, window.innerWidth - shellPadding);
+  const availableHeight = Math.max(160, window.innerHeight - hudHeight - helpHeight - controlsHeight - verticalSafety);
+
+  let width = availableWidth;
+  let height = width / CANVAS_ASPECT;
+
+  if (height > availableHeight) {
+    height = availableHeight;
+    width = height * CANVAS_ASPECT;
+  }
+
+  canvas.style.width = `${Math.floor(width)}px`;
+  canvas.style.height = `${Math.floor(height)}px`;
+}
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      if (appShell && appShell.requestFullscreen) {
+        await appShell.requestFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (_) {
+    // Ignore fullscreen failures from unsupported browsers or denied permissions.
+  }
 }
 
 function playSound(name, volume = 0.55) {
@@ -294,6 +347,7 @@ function startGame() {
   resetRun();
   state.screen = "playing";
   overlay.textContent = "";
+  stopMusic(true);
   playMusic();
 }
 
@@ -808,6 +862,12 @@ window.addEventListener("keydown", (event) => {
   startAudioIfNeeded();
   keys.add(event.key);
 
+  if ((event.key === "f" || event.key === "F") && (state.screen === "menu" || state.screen === "playing")) {
+    event.preventDefault();
+    toggleFullscreen();
+    return;
+  }
+
   if (state.screen === "menu") {
     if (event.key === "Enter") {
       startGame();
@@ -843,13 +903,14 @@ window.addEventListener("keydown", (event) => {
   if (state.screen === "paused") {
     if (event.key === "p" || event.key === "P") {
       state.screen = "playing";
-      playMusic();
+      resumeMusic();
       return;
     }
 
     if (event.key === "m" || event.key === "M") {
       state.screen = "menu";
       overlay.textContent = "";
+      stopMusic(true);
       return;
     }
   }
@@ -865,6 +926,7 @@ window.addEventListener("keydown", (event) => {
     if (event.key === "m" || event.key === "M") {
       state.screen = "menu";
       overlay.textContent = "";
+      stopMusic(true);
       return;
     }
   }
@@ -878,6 +940,7 @@ window.addEventListener("keydown", (event) => {
     if (event.key === "m" || event.key === "M") {
       state.screen = "menu";
       overlay.textContent = "";
+      stopMusic(true);
       return;
     }
   }
@@ -937,5 +1000,9 @@ preloadAssets().then(() => {
   overlay.textContent = "";
   state.screen = "menu";
   updateHud();
+  setCanvasDisplaySize();
   requestAnimationFrame(tick);
 });
+
+window.addEventListener("resize", setCanvasDisplaySize);
+document.addEventListener("fullscreenchange", setCanvasDisplaySize);

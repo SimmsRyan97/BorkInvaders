@@ -30,11 +30,14 @@ body {
 body {
   display: grid;
   place-items: center;
+  padding: 8px;
   overflow: hidden;
 }
 
 .app-shell {
-  width: min(1100px, 96vw);
+  width: min(98vw, calc(98vh * 16 / 9 + 28px));
+  max-width: 98vw;
+  max-height: calc(100vh - 16px);
   display: grid;
   gap: 10px;
   padding: 12px;
@@ -67,6 +70,8 @@ body {
 
 .stage-wrap {
   position: relative;
+  display: grid;
+  place-items: center;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -76,8 +81,16 @@ body {
 #gameCanvas {
   width: 100%;
   height: auto;
-  max-height: 70vh;
+  aspect-ratio: 16 / 9;
   display: block;
+}
+
+.app-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
 }
 
 .overlay {
